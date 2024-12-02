@@ -1,8 +1,10 @@
+from datetime import datetime, date
 import base64
+from datetime import datetime
 import os
 from urllib import response
 from urllib.parse import urlencode
-from flask import Flask, abort, json, jsonify, redirect, render_template, request, send_file, send_from_directory, session
+from flask import Flask, Response, abort, json, jsonify, redirect, render_template, request, send_file, send_from_directory, session
 # from flask_jwt_extended import *
 import markdown
 import pymysql
@@ -14,6 +16,8 @@ from firebase_admin import credentials, messaging
 import firebase_admin
 
 app = Flask(__name__)
+
+# CORS(app)
 
 # Setup the Flask-JWT-Extended extension
 app.config['JWT_SECRET_KEY'] = Config.JWT_SECRET_KEY
@@ -46,6 +50,10 @@ app.config['NAVER_RESOURCE_ENDPOINT'] = Naver_Config.NAVER_RESOURCE_ENDPOINT
 
 
 app.config['SECRET_KEY'] = Config.SECRET_KEY
+
+# 유진쓰 추가 6/16
+# CORS(app, resources={r'*': {'origins': 'http://localhost:64212'}},
+#      supports_credentials=True)
 
 # Setup Firebase
 cred = credentials.Certificate('./config/firebaseServiceAccountKey.json')
@@ -87,10 +95,11 @@ def registToken():
 @app.route('/test/notify', methods=['GET'])
 def mesgSend():
     device_name = request.args.get("device_name")
+    notice_title = request.args.get("notice_title")
     registration_token = deviceToken[device_name]
     message = messaging.Message(
         notification=messaging.Notification(
-            title='Notification Occurred',
+            title=f'{notice_title}',
             body='This notification is a test notification.'
         ),
         token=registration_token,
@@ -250,7 +259,7 @@ def notificationTest():
         obj = data['object']
     else:
         obj = 1
-    registration_token = 'Please REENTER TOKEN'
+    registration_token = 'fFRv_Sr_STq1iF-fT0ARX7:APA91bEeJo1uXLqjeIwo8PAPPVdA274y-h1uOKB8CthSFtGY8ZK7VjJBm1W_j9N5iGyszTjD_zACkMPj2JvcGfJBSNCrIe7JnBOeOtRKibuplzoK26uHpjrXIBgjis3HThzR0TWiA2Nz'
     message = messaging.Message(
         notification=messaging.Notification(
             title='Event Occurred',
@@ -261,6 +270,27 @@ def notificationTest():
     response = messaging.send(message)
     print('Successfully sent message:', response)
     return '1'
+
+
+# json dumps시 dict내용의 datatime클래스를 formatting string타입으로 바꿈
+def datetime_to_json_formatting(o):
+    if isinstance(o, (date, datetime)):
+        return o.strftime('%Y.%m.%d %H:%M:%S')
+
+
+@app.route('/get/eventlog', methods=['GET', 'POST'])
+def getEventLog():
+    if request.is_json:
+        data = request.get_json()
+        user_id = data['user_id']
+    # else:
+        # return jsonify({"msg": "Invaild Data Type"}), 404
+    else:  # GET 방식
+        user_id = request.args.get("user_id")
+    sql = f"select * from eventlog where user_id = '{user_id}'"
+    cursor.execute(sql)
+    logs = cursor.fetchall()
+    return Response(content_type="application/json", response=json.dumps({"event_logs": logs}, default=datetime_to_json_formatting))
 
 
 @app.route('/favicon.ico')

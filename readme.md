@@ -71,7 +71,7 @@ Content-Type: application/json
 디바이스명(Key)과 토큰(Value)을 Dict 형식으로 저장됩니다.  
 응답 본문은 msg로 구성된 Json 객체입니다.
 
-요청
+### 요청
 
 헤더
 |이름|설명|필수|
@@ -84,15 +84,14 @@ Content-Type: application/json
 |device_name|String|디바이스명|O|
 |device_token|String|디바이스 토큰|O|
 
-응답
+### 응답
 
 본문
 |이름|타입|설명|
 |---|---|---|
 |msg|String|작업 완료 메시지    |
 
-예제
-
+### 예제
 요청
 ```bash
 curl -v -X POST "https://hlaigo.co.kr/regist/token" \
